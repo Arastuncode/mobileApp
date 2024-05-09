@@ -2,11 +2,14 @@ import React, { useState } from "react";
 import { View, StyleSheet, Pressable, ScrollView, Text, TextInput } from 'react-native';
 import { useFonts } from 'expo-font';
 
-const Server = ({ navigation }) => {
+const Server = () => {
     const [path, setPath] = useState('https://jsonplaceholder.typicode.com');
     const [connectionStatus, setConnectionStatus] = useState('');
 
-    let [fontsLoad] = useFonts({ 'Medium': require('../assets/fonts/static/Montserrat-Medium.ttf') });
+    let [fontsLoad] = useFonts({
+        'Regular': require('../assets/fonts/static/Roboto-Regular.ttf'),
+        'Bold': require('../assets/fonts/static/Roboto-Bold.ttf')
+    });
 
     if (!fontsLoad) { return null; }
 
@@ -20,11 +23,11 @@ const Server = ({ navigation }) => {
             .then(response => response.json())
             .then(data => { console.log(data) })
             .catch(error => { console.error('Error:', error) });
-            
+
     }
     return (
-        <ScrollView contentContainerStyle={{ marginVertical: 30 }}>
-            <Text style={{ ...styles.text, color: '#333', fontSize: 32, marginVertical: 10}}> Server</Text>
+        <ScrollView contentContainerStyle={{ marginHorizontal: 10 }}>
+            <Text style={{ color: '#000', fontSize: 32, marginTop: 20, fontFamily: 'Regular', textAlign: 'center' }}> Server</Text>
             <View>
                 <TextInput
                     placeholder='Server yolu'
@@ -48,13 +51,12 @@ const styles = StyleSheet.create({
         borderBottomWidth: 0.5,
         height: 48,
         borderBottomColor: '#8e93a1',
+        fontFamily: 'Regular',
     },
     text: {
         fontSize: 16,
-        lineHeight: 21,
-        fontWeight: 'bold',
         color: '#fff',
-        fontFamily: 'Medium',
+        fontFamily: 'Regular',
         textAlign: 'center'
     },
     button: {

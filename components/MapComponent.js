@@ -11,7 +11,9 @@ const MapComponent = ({ closeModal, onDataReceived }) => {
     const [initialRegion, setInitialRegion] = useState(null);
     const [selectedLocation, setSelectedLocation] = useState(null);
     const [address, setAddress] = useState()
-    let [fontsLoad] = useFonts({ 'Medium': require('../assets/fonts/static/Montserrat-Medium.ttf') })
+
+    let [fontsLoad] = useFonts({ 'Medium': require('../assets/fonts/static/Roboto-Regular.ttf') })
+    
     useEffect(() => {
         const getLocation = async () => {
             let { status } = await Location.requestForegroundPermissionsAsync();
@@ -35,10 +37,7 @@ const MapComponent = ({ closeModal, onDataReceived }) => {
     }, []);
 
     const findAddress = async () => {
-        if (!selectedLocation) {
-            // console.error("Selected location is null");
-            return;
-        }
+        if (!selectedLocation) return;    
     
         let latitude = selectedLocation.latitude;
         let longitude = selectedLocation.longitude;
@@ -67,9 +66,7 @@ const MapComponent = ({ closeModal, onDataReceived }) => {
     const sendDataToParent = () => {
         onDataReceived(address);
         closeModal();
-    }
-
-    
+    }    
 
     return (
         <View style={{ flex: 1 }}>
@@ -101,11 +98,9 @@ const MapComponent = ({ closeModal, onDataReceived }) => {
             )}
             {selectedLocation && (
                 <View style={{ position: 'absolute', bottom: 16, left: 16, right: 16 }}>
-                    <Text>Selected Location:</Text>
-                    {/* <Text>{`Latitude: ${selectedLocation.latitude.toFixed(6)}`}</Text> */}
-                    <Text>{address}</Text>
+                    <Text style={{...styles.text, marginVertical: 10}}>Seçilmiş ünvan: {address}</Text>
                     <Pressable style={{ ...styles.button, width: 150 }} onPress={sendDataToParent}>
-                        <Text style={styles.text}>Save Location</Text>
+                        <Text style={{...styles.text, color: '#fff'}}>Təsdiq et</Text>
                     </Pressable>
                 </View>
             )}
@@ -130,20 +125,14 @@ const styles = StyleSheet.create({
         paddingVertical: 5,
         paddingHorizontal: 5,
         borderRadius: 4,
-        backgroundColor: '#3498db',
+        backgroundColor: 'green',
         height: 40,
     },
     text: {
         fontSize: 16,
-        lineHeight: 21,
-        fontWeight: 'bold',
-        letterSpacing: 0.25,
-        color: 'white',
-        fontFamily: 'Medium'
+        color: '#333',
+        fontFamily: 'Medium',
     },
 });
 
 export default MapComponent;
-
-
-// AIzaSyBXMByiyVxwbt2SKf4a-pnMaRhxxZ_uNSo

@@ -5,20 +5,21 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 const Stack = createNativeStackNavigator();
 
-const Settings = ({navigation}) => {
-    let [fontsLoad] = useFonts({ 'Medium': require('../assets/fonts/static/Montserrat-Medium.ttf') });
+const Settings = ({ navigation }) => {
+    let [fontsLoad] = useFonts({
+        'Regular': require('../assets/fonts/static/Roboto-Regular.ttf'),
+        'Bold': require('../assets/fonts/static/Roboto-Bold.ttf'),
+    });
     if (!fontsLoad) { return null }
 
     return (
         <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'start', paddingVertical: 20 }}>
-            <Text style={{ textAlign: 'center', fontFamily: 'Medium', fontSize: 32 }}>Sazlamalar</Text>
+            <Text style={{ textAlign: 'center', fontFamily: 'Regular', fontSize: 32 }}>Sazlamalar</Text>
             <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'start', paddingVertical: 15 }}>
-                <View>
-                    <View style={{ marginTop: 10 }}>
-                        <TouchableOpacity style={styles.buttonContainer}>
-                            <Text onPress={() => navigation.navigate('Server')} style={styles.buttonText}> Server</Text>
-                        </TouchableOpacity>
-                    </View>
+                <View style={{ marginTop: 10 }}>
+                    <TouchableOpacity style={styles.buttonContainer}>
+                        <Text onPress={() => navigation.navigate('Server')} style={styles.buttonText}> Server</Text>
+                    </TouchableOpacity>
                 </View>
             </ScrollView>
         </ScrollView>
@@ -37,9 +38,8 @@ const styles = StyleSheet.create({
     buttonText: {
         color: '#ffffff',
         textAlign: 'center',
-        fontWeight: 'bold',
-        fontFamily: 'Medium',
-        fontSize: 20
+        fontFamily: 'Bold',
+        fontSize: 20,
     },
 });
 

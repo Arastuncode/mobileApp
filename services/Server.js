@@ -1,14 +1,14 @@
 
 import axios from 'axios';
 
-const url = 'http://192.168.1.67:3000:3000/api';
+const url = 'http://192.168.88.40:3000/api';
 
 export const fetchData = async (tableName, formatDate) => {
     try {
         const response = await axios.get(`${url}/${tableName}/${formatDate ? 'true' : ''}`);
         return response.data;
     } catch (error) {
-        console.error('Request Error:', error);
+        console.log('Request Error:', error);
         throw error;
     }
 };
@@ -25,9 +25,9 @@ export const sendRequest = async (apiUrl, postData) => {
 
         if (response.status === 200) return { success: true, message: 'Məlumatlar göndərildi!' };
         else if (response.status === 400) return { success: true, message: 'Məlumat bazada möcuddur!' };
+        else if (response.status === 404) return { success: true, message: 'Kifayət qədər məhsul yoxdur' }
         else return { success: false, message: 'Uğursuz cəht!' };
     } catch (error) {
-        console.error(error);
         return { success: false, message: 'Error occurred during the request.' };
     }
 };
@@ -70,10 +70,10 @@ export const deleteData = async (id, tableName) => {
 
 export const autoFill = async (tableName, columnName, query) => {
     try {
-        const response = await axios.get(`http://192.168.1.67:3000:3000/endpoint/autoFill?query=${query}&tableName=${tableName}&columnName=${columnName}`);
+        const response = await axios.get(`http://192.168.88.40:3000/endpoint/autoFill?query=${query}&tableName=${tableName}&columnName=${columnName}`);
         return response.data;
     } catch (error) {
-        console.error('Request Error:', error);
+        console.log('Request Error:', error);
         throw error;
     }
 

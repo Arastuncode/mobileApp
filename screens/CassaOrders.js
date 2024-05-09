@@ -6,7 +6,7 @@ import { fetchData } from "../services/Server";
 
 const CassaOrders = () => {
     const [resData, setData] = useState([]);
-    let [fontsLoad] = useFonts({ 'Medium': require('../assets/fonts/static/Montserrat-Medium.ttf') });
+    let [fontsLoad] = useFonts({ 'Medium': require('../assets/fonts/static/Roboto-Regular.ttf') });
 
     useEffect(() => {
         const fetchDataAsync = async () => {

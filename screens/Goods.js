@@ -2,9 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, TextInput, StyleSheet, ScrollView, Pressable, Text, Alert, Modal, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
-import { fetchData } from '../services/Server';
 import { addRow, removeLastRow } from '../services/Functions';
-import { sendRequest, deleteData, sendEditData } from '../services/Server';
+import { sendRequest, deleteData, sendEditData, fetchData } from '../services/Server';
 
 const Goods = () => {
     const [isModalVisible, setModalVisible] = useState(false);
@@ -14,17 +13,6 @@ const Goods = () => {
     const [formTable, setFormTable] = useState([]);
     const [isUpdateModalVisible, setUpdateModalVisible] = useState(false);
 
-    let [fontsLoad] = useFonts({ 'Medium': require('../assets/fonts/static/Montserrat-Medium.ttf') })
-    let count = 0;
-    let rowCount = 0;
-    const headers = ["№", "Məhsulun adı"];
-    const handlePress = () => { setModalVisible(true); handleAddRow() }
-    const handleAddRow = () => { addRow(setRowData) };
-    const handleModalOpen = () => { setUpdateModalVisible(true); }
-    const closeUpdateModal = () => { setUpdateModalVisible(false) }
-    const handleRemoveRow = () => { removeLastRow(setRowData) };
-
-    useEffect(() => { fetchDataAsync() }, []);
 
     const fetchDataAsync = async () => {
         try {
@@ -34,6 +22,24 @@ const Goods = () => {
             console.error(error);
         }
     };
+
+    useEffect(() => { fetchDataAsync() }, []);
+
+    let [fontsLoad] = useFonts({
+        'Regular': require('../assets/fonts/static/Roboto-Regular.ttf'),
+        'Bold': require('../assets/fonts/static/Roboto-Bold.ttf'),
+    });
+    if (!fontsLoad) { return null }
+
+    let count = 0;
+    let rowCount = 0;
+    const headers = ["№", "Məhsulun adı"];
+    const createHeaders = ["№", "Məhsulun adı", "Min. say"];
+    const handlePress = () => { setModalVisible(true); handleAddRow() }
+    const handleAddRow = () => { addRow(setRowData) };
+    const handleModalOpen = () => { setUpdateModalVisible(true); }
+    const closeUpdateModal = () => { setUpdateModalVisible(false) }
+    const handleRemoveRow = () => { removeLastRow(setRowData) };
 
     const handleTableInputChange = (index, field, value) => {
         let newData = [...formTable];
@@ -67,7 +73,7 @@ const Goods = () => {
 
         if (
             formTable.length === 0 ||
-            formTable.some(entry => !entry.name )
+            formTable.some(entry => !entry.name)
         ) {
             Alert.alert('Məlumatları daxil edin!');
             return;
@@ -105,7 +111,7 @@ const Goods = () => {
     };
 
     const handleEdit = async () => {
-        let selectedRowData = selectedRows.map((item) => ({ id: item.id, name: item.name }))
+        let selectedRowData = selectedRows.map((item) => ({ id: item.id, name: item.name, minQuantity: item.minQuantity }))
         let tableName = 'products';
         try {
             const result = await sendEditData(selectedRowData, tableName);
@@ -147,13 +153,27 @@ const Goods = () => {
     };
 
     return (
-        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'start', paddingVertical: 15, marginVertical: 20, }}>
-            <Text style={{ textAlign: 'center', fontFamily: 'Medium', fontSize: 32 }}>Məhsullar</Text>
-            <View style={{ marginVertical: 20, marginHorizontal: 10 }}>
-                <Pressable style={{ ...styles.button, width: 250, }} onPress={handlePress}>
-                    <Text style={styles.text}>Yeni Məhsul əlavə et</Text>
-                </Pressable>
+        <View>
+            <View style={styles.header}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: 350 }}>
+                    <View>
+                        <Text style={{ marginBottom: 10, textAlign: 'center', fontFamily: 'Regular', fontSize: 32 }}> Məhsullar </Text>
+                    </View>
+                    <View style={{ marginVertical: 20, marginHorizontal: 10 }}>
+                        <Pressable style={{ ...styles.button, width: 50 }} onPress={handlePress}>
+                            <Text style={styles.text}>+</Text>
+                        </Pressable>
+                    </View>
+                </View>
+                <View style={{ ...styles.row,  width: 375}}>
+                    {headers.map((header, rowIndex) => (
+                        <View style={styles.cell} key={`row_${rowIndex}`}>
+                            <Text numberOfLines={1} ellipsizeMode="tail" textBreakStrategy="simple" style={{ fontFamily: 'Bold', textAlign: 'center' }}>{header}</Text>
+                        </View>
+                    ))}
+                </View>
             </View>
+
             <Modal visible={isModalVisible} animationType="slide">
                 <ScrollView>
                     <View style={{ margin: 10 }} >
@@ -167,16 +187,16 @@ const Goods = () => {
                                 <Text style={styles.text}>+</Text>
                             </Pressable>
                         </View>
-                        <View style={{ marginHorizontal:10 }} >
+                        <View style={{ marginHorizontal: 10 }} >
                             <Pressable style={styles.button} onPress={handleRemoveRow}>
                                 <Text style={styles.text}>-</Text>
                             </Pressable>
                         </View>
                     </View>
                     <View style={{ ...styles.row, marginHorizontal: 10 }}>
-                        {headers.map((header, rowIndex) => (
+                        {createHeaders.map((header, rowIndex) => (
                             <View style={styles.cell} key={`row_${rowIndex}`}>
-                                <Text>{header}</Text>
+                                <Text style={{ fontFamily: 'Bold', fontSize: 18 }}>{header}</Text>
                             </View>
                         ))}
                     </View>
@@ -192,6 +212,14 @@ const Goods = () => {
                                     onChangeText={(text) => handleTableInputChange(rowIndex, 'name', text)}
                                 />
                             </View>
+                            <View style={styles.cell}>
+                                <TextInput
+                                    placeholder='Min. say'
+                                    keyboardType="numeric"
+                                    value={formTable[rowIndex]?.minQuantity}
+                                    onChangeText={(text) => handleTableInputChange(rowIndex, 'minQuantity', text)}
+                                />
+                            </View>
                         </View>
                     ))}
                     <View style={{ alignItems: 'flex-end', margin: 10 }}>
@@ -201,42 +229,7 @@ const Goods = () => {
                     </View>
                 </ScrollView>
             </Modal>
-            <View>
-                <View style={styles.table}>
-                    <View style={styles.row}>
-                        {headers.map((header, rowIndex) => (
-                            <View style={styles.cell} key={`row_${rowIndex}`}>
-                                <Text style={{ fontWeight: 600, textAlign: 'center', }}>{header}</Text>
-                            </View>
-                        ))}
-                    </View>
-                    <View>
-                        {resData.map((item, rowIndex) => (
-                            <TouchableOpacity key={`row_${rowIndex}`} onPress={() => handleRowPress(item)}>
-                                <View
-                                    style={[
-                                        styles.row,
-                                        selectedRows.some((selectedRow) => selectedRow.id === item.id) && { backgroundColor: 'lightblue' },
-                                    ]}
-                                >
-                                    <View style={styles.cell}>
-                                        <Text>{++count}</Text>
-                                    </View>
 
-                                    <View style={styles.cell}>
-                                        <Text>{item.name}</Text>
-                                    </View>
-                                </View>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                </View>
-                <View style={{ margin: 10 }}>
-                    <Pressable disabled={selectedRows.length === 0} style={{ ...styles.button, width: 150, display: `${selectedRows.length === 0 ? 'none' : 'block'}`, backgroundColor: 'blue' }} onPress={handleModalOpen}>
-                        <Text style={styles.text}>Redaktə et</Text>
-                    </Pressable>
-                </View>
-            </View>
             <Modal visible={isUpdateModalVisible} animationType="slide">
                 <ScrollView contentContainerStyle={{ marginVertical: 10 }} >
                     <View style={{ padding: 5 }}>
@@ -245,9 +238,9 @@ const Goods = () => {
                     <View style={styles.modalContainer}>
                         <View style={styles.modalContent}>
                             <View style={{ ...styles.row, marginHorizontal: 10 }}>
-                                {headers.map((header, rowIndex) => (
+                                {createHeaders.map((header, rowIndex) => (
                                     <View style={styles.cell} key={`row_${rowIndex}`}>
-                                        <Text>{header}</Text>
+                                        <Text style={{ textAlign: 'center', fontFamily: 'Bold', fontSize: 18 }}>{header}</Text>
                                     </View>
                                 ))}
                             </View>
@@ -261,6 +254,14 @@ const Goods = () => {
                                             placeholder='Məhsulun adı'
                                             value={selectedRows[rowIndex]?.name}
                                             onChangeText={(text) => handleInputChange(rowIndex, 'name', text)}
+                                        />
+                                    </View>
+                                    <View style={styles.cell}>
+                                        <TextInput
+                                            placeholder='Min say'
+                                            value={selectedRows[rowIndex]?.minQuantity === null ? '' : selectedRows[rowIndex]?.minQuantity.toString()}
+                                            keyboardType='numeric'
+                                            onChangeText={(text) => handleInputChange(rowIndex, 'minQuantity', text)}
                                         />
                                     </View>
                                 </View>
@@ -281,7 +282,39 @@ const Goods = () => {
                     </View>
                 </ScrollView>
             </Modal>
-        </ScrollView>
+
+            <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'start', paddingVertical: 15, marginVertical: 20, }}>
+                <View style={{marginTop: 95}}>
+                    <View style={styles.table}>
+                        <View>
+                            {resData.map((item, rowIndex) => (
+                                <TouchableOpacity key={`row_${rowIndex}`} onPress={() => handleRowPress(item)}>
+                                    <View
+                                        style={[
+                                            styles.row,
+                                            selectedRows.some((selectedRow) => selectedRow.id === item.id) && { backgroundColor: 'lightblue' },
+                                        ]}
+                                    >
+                                        <View style={styles.cell}>
+                                            <Text style={{ ...styles.cellText, paddingLeft: 10 }}>{++count}</Text>
+                                        </View>
+
+                                        <View style={styles.cell}>
+                                            <Text style={styles.cellText}>{item.name}</Text>
+                                        </View>
+                                    </View>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
+                    <View style={{ margin: 10 }}>
+                        <Pressable disabled={selectedRows.length === 0} style={{ ...styles.button, width: 150, display: `${selectedRows.length === 0 ? 'none' : 'block'}`, backgroundColor: 'blue' }} onPress={handleModalOpen}>
+                            <Text style={styles.text}>Redaktə et</Text>
+                        </Pressable>
+                    </View>
+                </View>
+            </ScrollView>
+        </View>
     )
 }
 
@@ -291,21 +324,25 @@ const styles = StyleSheet.create({
         borderBottomWidth: 0.5,
         height: 48,
         borderBottomColor: '#8e93a1',
+        fontFamily: 'Regular'
     },
     table: {
-        borderWidth: 1,
+        borderWidth: .5,
         borderColor: '#ddd',
         margin: 5,
     },
     row: {
         flexDirection: 'row',
-        borderBottomWidth: 1,
+        borderBottomWidth: .5,
+        borderTOpWidth: .5,
         borderColor: '#ddd',
     },
     cell: {
         flex: 1,
         padding: 5,
-        borderRightWidth: 1,
+        borderRightWidth: .5,
+        borderLeftWidth: .5,
+        borderTopWidth: .5,
         borderColor: '#ddd',
     },
     button: {
@@ -319,11 +356,22 @@ const styles = StyleSheet.create({
     },
     text: {
         fontSize: 16,
-        lineHeight: 21,
-        fontWeight: 'bold',
-        letterSpacing: 0.25,
         color: 'white',
-        fontFamily: 'Medium'
+        fontFamily: 'Regular',
+    },
+    cellText: { fontFamily: 'Regular', },
+    header: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 140,
+        backgroundColor: '#eee',
+        alignItems: 'center',
+        marginBottom: 40,
+        paddingVertical: 30,
+        paddingHorizontal: 10,
+        zIndex: 1,
     },
 });
 export default Goods;

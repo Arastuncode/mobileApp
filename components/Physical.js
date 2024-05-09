@@ -4,15 +4,19 @@ import { Ionicons } from '@expo/vector-icons';
 import MapComponent from "./MapComponent";
 import { useFonts } from "expo-font";
 import { sendRequest } from '../services/Server';
+import { TextInputMask } from 'react-native-masked-text';
 
 
 const Physical = () => {
-    let [fontsLoad] = useFonts({ 'Medium': require('../assets/fonts/static/Montserrat-Medium.ttf') });
-    const [name, setName] = useState("");
-    const [phone, setPhone] = useState("");
+    let [fontsLoad] = useFonts({ 'Regular': require('../assets/fonts/static/Roboto-Regular.ttf') });
+    const [companyName, setCompanyName] = useState("");
+    const [person, setPerson] = useState("");
+    const [numberInputs, setNumberInputs] = useState(['']);
+    const [phone, setPhone] = useState(Array(numberInputs.length).fill(''));
     const [address, setAddress] = useState("");
     const [tin, setTin] = useState("");
     const [isModalVisible, setModalVisible] = useState(false);
+
     const inputRefs = useRef([]);
 
     if (!fontsLoad) { return null }
@@ -22,30 +26,39 @@ const Physical = () => {
 
     const sendData = async () => {
         let apiUrl = '/kontragent';
-        
+
         if (
-            !name ||
+            !companyName ||
+            !person ||
             !phone ||
             !tin ||
-            !address 
+            !address
         ) {
             Alert.alert('Məlumatları daxil edin!');
             return;
         }
 
         const postData = {
-            name: name,
+            company_name: companyName,
+            person: person,
             phone_number: phone,
             tin: tin,
             address: address,
             type: 'Fiziki'
         };
-        const result = await sendRequest(apiUrl, postData);
 
-        if (result.success) {
-            Alert.alert(result.message);
-        } else {
-            Alert.alert(result.message);
+        try {
+            const result = await sendRequest(apiUrl, postData);
+            if (result.success) {
+                if (result.success) Alert.alert(result.message);
+                if (result.message === "Error occurred during the request.") Alert.alert('Məlumat artıq möcüddür')
+                else Alert.alert(result.message);
+            } else {
+                Alert.alert('Xəta');
+            }
+
+        } catch (error) {
+
         }
     }
 
@@ -56,32 +69,80 @@ const Physical = () => {
         }
     };
 
+    const handleNumbers = (value, field, index) => {
+        setPhone(prevPhone => {
+            const newData = [...prevPhone];
+            newData[index] = { ...newData[index], [field]: value };
+            return newData;
+        });
+    };
+
+
+    const handleRemoveInput = (indexToRemove) => {
+        setNumberInputs(prevInputs => prevInputs.filter((_, index) => index !== indexToRemove));
+        setPhone(prevPhone => prevPhone.filter((_, index) => index !== indexToRemove));
+    };
+
+
+    const handleAddInput = () => { setNumberInputs([...numberInputs, '']) }
     return (
-         <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'start', paddingVertical: 35, marginVertical: 20, marginHorizontal: 10 }}>
-            <Text style={{ marginBottom: 10, textAlign: 'center', fontSize: 32 }}>Hüquqi şəxs</Text>
+        <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'start', paddingVertical: 35, marginVertical: 20, marginHorizontal: 10 }}>
+            <Text style={{ marginBottom: 10, textAlign: 'center', fontSize: 32 , fontFamily: 'Regular', }}>Fiziki şəxs</Text>
             <View style={{ marginVertical: 10 }}>
                 <TextInput
-                    placeholder="S.A.A"
-                    value = {name}
-                    onChangeText={(text) => setName(text)}
-                    style = {styles.input}
+                    placeholder="Şirkətin adı"
+                    value={companyName}
+                    onChangeText={(text) => setCompanyName(text)}
+                    style={styles.input}
                     ref={(ref) => (inputRefs.current[1] = ref)}
                     onSubmitEditing={() => focusInputRefs(1)}
                 />
                 <TextInput
-                    placeholder="Əlaqə nömrəsi"
-                    value={phone}
-                    keyboardType="numeric"
-                    onChangeText={(text) => setPhone(text)}
-                    style = {styles.input}
+                    placeholder="Məhsul şəxs"
+                    value={person}
+                    onChangeText={(text) => setPerson(text)}
+                    style={styles.input}
                     ref={(ref) => (inputRefs.current[2] = ref)}
                     onSubmitEditing={() => focusInputRefs(2)}
                 />
+                <View style={{ flexDirection: 'row-reverse' }}>
+                    <Pressable style={{ ...styles.button, marginHorizontal: 5 }} onPress={handleAddInput} >
+                        <Text style={styles.text}>+</Text>
+                    </Pressable>
+                </View>
+                <View style={{ flexDirection: 'row' }}>
+                    <View style={{ width: 300 }}>
+                        {numberInputs.map((value, index) => (
+                            <View key={`row_${index}`} style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                <TextInputMask
+                                    placeholder="Əlaqə nömrəsi"
+                                    type={'custom'}
+                                    options={{
+                                        mask: '+999 (099) 999-99-99'
+                                    }}
+                                    keyboardType="numeric"
+                                    value={phone[index]?.number || ''}
+                                    onChangeText={(text) => handleNumbers(text, 'number', index)}
+                                    style={{ ...styles.input, width: 250 }}
+                                    // ref={(ref) => (inputRefs.current[2] = ref)}
+                                    // onSubmitEditing={() => focusInputRefs(2)}
+                                />
+                                <View>
+                                    <Pressable style={styles.button}
+                                        onPress={() => handleRemoveInput(index)}
+                                    >
+                                        <Text style={styles.text}>-</Text>
+                                    </Pressable>
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+                </View>
                 <TextInput
                     placeholder="Vöen"
                     value={tin}
                     onChangeText={(text) => setTin(text)}
-                    style = {styles.input}
+                    style={styles.input}
                     ref={(ref) => (inputRefs.current[3] = ref)}
                     onSubmitEditing={() => focusInputRefs(3)}
                 />
@@ -91,7 +152,7 @@ const Physical = () => {
                             placeholder="Ünvan"
                             value={address}
                             onChangeText={(text => (setAddress(text)))}
-                            style = {styles.input}
+                            style={styles.input}
                             ref={(ref) => (inputRefs.current[4] = ref)}
                             onSubmitEditing={() => focusInputRefs(4)}
                         />
@@ -132,17 +193,15 @@ const styles = StyleSheet.create({
     },
     text: {
         fontSize: 16,
-        lineHeight: 21,
-        fontWeight: 'bold',
-        letterSpacing: 0.25,
         color: 'white',
-        fontFamily: 'Medium'
+        fontFamily: 'Regular'
     },
     input: {
         margin: 10,
         borderBottomWidth: 0.5,
         height: 48,
         borderBottomColor: '#8e93a1',
+        fontFamily: 'Regular',
     },
 });
 

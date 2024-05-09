@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { View, ScrollView, StyleSheet, Pressable, Text, Modal, Alert, TouchableOpacity, TextInput, LogBox } from "react-native";
 import { useFonts } from "expo-font";
 import { Ionicons } from '@expo/vector-icons';
@@ -25,16 +25,8 @@ const Nomenklatura = () => {
         price: '',
         customer: '',
     });
+
     const inputRefs = useRef([]);
-
-    let [fontsLoad] = useFonts({ 'Medium': require('../assets/fonts/static/Montserrat-Medium.ttf') })
-    const headers = ["№", "Ad", "Növ", 'Qiymət', 'Qaimə nömrəsi'];
-    const editHeaders = ["№", "Ad", "Növ", 'Kateqoriya', 'Brend', 'Qiymət', 'Qaimə nömrəsi'];
-    let rowCount = 0;
-    LogBox.ignoreAllLogs()
-
-    useEffect(() => { fetchDataAsync() }, []);
-    useEffect(() => { if (name.length > 0) { searchProduct(name) } }, [name]);
 
     const fetchDataAsync = async () => {
         try {
@@ -51,20 +43,34 @@ const Nomenklatura = () => {
         }
     };
 
+    useEffect(() => { fetchDataAsync() }, []);
+
+    const searchData = useCallback(async (tableName, columnName, query, index, rowIndex) => {
+        if (query.length > 0) {
+            try {
+                const response = await autoFill(tableName, columnName, query);
+                if (response) {
+                    setSearchResults(Array.from(new Set(response.map(item => item[columnName]))))
+                } else {
+                    console.error("No results found");
+                }
+            } catch (error) {
+                console.error("Error searching:", error);
+            }
+        }
+    }, []);
+
+    let [fontsLoad] = useFonts({
+        'Regular': require('../assets/fonts/static/Roboto-Regular.ttf'),
+        'Bold': require('../assets/fonts/static/Roboto-Bold.ttf')
+    })
+    const headers = ["№", "Ad", 'Qiymət', 'Q.Nömrəsi'];
+    const editHeaders = ["№", "Ad", "Növ", 'Kateqoriya', 'Brend', 'Qiymət', 'Q.Nömrəsi'];
+    let rowCount = 0;
+    const groupedRows = {};
+    // LogBox.ignoreAllLogs()
     if (!fontsLoad) return null
 
-    const handlePress = () => { setModalVisible(true); }
-    const closeUpdateModal = () => { setUpdateModalVisible(false) }
-
-    const searchProduct = async (query) => {
-        let tableName = 'products'
-        try {
-            const response = await autoFill(tableName, query);
-            setSearchResults(response);
-        } catch (error) {
-            console.error('Error searching products:', error);
-        }
-    };
 
     const closeModal = () => {
         setModalVisible(false)
@@ -74,18 +80,17 @@ const Nomenklatura = () => {
         setPrice()
         setKind()
         setSearchResults([])
-
     }
 
     const sendData = async () => {
         let apiUrl = '/nomenklatura';
-        
+
         if (
             !name ||
             !category ||
             !brand ||
             !price ||
-            !kind 
+            !kind
         ) {
             Alert.alert('Məlumatları daxil edin!');
             return;
@@ -99,7 +104,9 @@ const Nomenklatura = () => {
             kind: kind,
         };
 
+        let productName = { formTable: [{ name: name }] };
         const result = await sendRequest(apiUrl, postData);
+        const response = await sendRequest('/products', productName)
 
         if (result.success) {
             Alert.alert(result.message);
@@ -126,7 +133,9 @@ const Nomenklatura = () => {
 
     const handleEdit = async () => {
         let tableName = 'nomenklatura';
+        let productName = { formTable: selectedRows.map(item => ({ name: item.name })) }
         try {
+            const response = await sendRequest('/products', productName)
             const result = await sendEditData(selectedRows, tableName);
             if (result.success) {
                 Alert.alert(result.message);
@@ -175,17 +184,6 @@ const Nomenklatura = () => {
             console.error(error);
         }
     };
-    const handelModalOpen = () => { setUpdateModalVisible(true) }
-
-    const groupedRows = {};
-
-    resNomenklatura.forEach((item) => {
-        const number = item.number;
-
-        if (!groupedRows[number]) groupedRows[number] = { customer: item.customer, sum: 0, number: item.number, date: item.date, id: item.id, rows: [] };
-        groupedRows[number].sum += item.price * item.quantity;
-        groupedRows[number].rows.push(item);
-    });
 
     const focusInputRefs = (index) => {
         const rowIndex = Math.floor(index / 4);
@@ -203,34 +201,77 @@ const Nomenklatura = () => {
             inputRefs.current[nextIndex].focus();
         }
     };
-    
+
+    resNomenklatura.forEach((item) => {
+        const number = item.number;
+
+        if (!groupedRows[number]) groupedRows[number] = { customer: item.customer, sum: 0, number: item.number, date: item.date, id: item.id, rows: [] };
+        groupedRows[number].sum += item.price * item.quantity;
+        groupedRows[number].rows.push(item);
+    });
+
+    const handelModalOpen = () => { setUpdateModalVisible(true) }
+    const handlePress = () => { setModalVisible(true); }
+    const closeUpdateModal = () => { setUpdateModalVisible(false) }
 
     return (
-        <ScrollView contentContainerStyle={{ paddingVertical: 35, marginVertical: 20, marginHorizontal: 10 }}>
-            <Text style={{ marginBottom: 10, textAlign: 'center', fontFamily: 'Medium', fontSize: 32 }}> Nomenklatura </Text>
-            <View style={{ marginVertical: 20, marginHorizontal: 10 }}>
-                <Pressable style={{ ...styles.button, width: 250 }} onPress={handlePress}>
-                    <Text style={styles.text}>Yeni Nomenklatura əlavə et</Text>
-                </Pressable>
+        <View style={{marginVertical: 10}}>
+            <View style={styles.header}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: 350 }}>
+                    <View>
+                        <Text style={{ marginBottom: 10, textAlign: 'center', fontFamily: 'Regular', fontSize: 32 }}> Nomenklatura </Text>
+                    </View>
+                    <View style={{ marginVertical: 20, marginHorizontal: 10 }}>
+                        <Pressable style={{ ...styles.button, width: 50 }} onPress={handlePress}>
+                            <Text style={styles.text}>+</Text>
+                        </Pressable>
+                    </View>
+                </View>
+                <View style={{ ...styles.row,  width: 365}}>
+                    {headers.map((header, rowIndex) => (
+                        <View style={styles.cell} key={`row_${rowIndex}`}>
+                            <Text numberOfLines={1} ellipsizeMode="tail" textBreakStrategy="simple" style={{ fontFamily: 'Bold', textAlign: 'center' }}>{header}</Text>
+                        </View>
+                    ))}
+                </View>
             </View>
 
             <Modal visible={isModalVisible} animationType="slide">
-                <ScrollView contentContainerStyle={{ marginVertical: 10 }} >
+                <ScrollView contentContainerStyle={{ paddingHorizontal: 10 }} >
                     <View style={{ padding: 5 }}>
                         <Text style={{ textAlign: 'right' }} onPress={closeModal} ><Ionicons name="close" size={24} color="red" /></Text>
                     </View>
                     <TextInput
                         placeholder="Ad"
                         value={name}
-                        onChangeText={(text) => setName(text)}
-                        style = {styles.input}
+                        onChangeText={(text) => {
+                            setName(text);
+                            if (text.trim().length === 0) {
+                                setSearchResults([])
+                            } else {
+                                searchData('products', 'name', text, null);
+                            }
+                        }}
+                        style={{ ...styles.input, marginBottom: 0 }}
                         ref={(ref) => (inputRefs.current[1] = ref)}
                         onSubmitEditing={() => inputRefs.current[2].focus()}
                     />
-                    <View style={{ padding: 15 }}>
-                        {searchResults.map((result) => (
-                            <Text key={result.id} style={{ padding: 3 }} onPress={() => setName(result.name)}>
-                                {result.name}
+
+                    <View style={{ paddingVertical: 15 }}>
+                        {searchResults.map((result, index) => (
+                            <Text
+                                key={index}
+                                style={{
+                                    padding: 3,
+                                    borderStyle: 'dotted',
+                                    backgroundColor: index % 2 === 0 ? '#f0f0f0' : 'white',
+
+                                }}
+                                onPress={() => {
+                                    setName(result)
+                                    setSearchResults([])
+                                }}>
+                                {result}
                             </Text>
                         ))}
                     </View>
@@ -238,15 +279,15 @@ const Nomenklatura = () => {
                         placeholder="Növ"
                         value={kind}
                         onChangeText={(text) => setKind(text)}
-                        style = {styles.input}
+                        style={styles.input}
                         ref={(ref) => (inputRefs.current[2] = ref)}
                         onSubmitEditing={() => inputRefs.current[3].focus()}
                     />
                     <TextInput
                         placeholder="Kateqoriya"
                         value={category}
-                        onChangeText={(text) =>  setCategory(text)}
-                        style = {styles.input}
+                        onChangeText={(text) => setCategory(text)}
+                        style={styles.input}
                         ref={(ref) => (inputRefs.current[3] = ref)}
                         onSubmitEditing={() => inputRefs.current[4].focus()}
                     />
@@ -254,7 +295,7 @@ const Nomenklatura = () => {
                         placeholder="Brend"
                         value={brand}
                         onChangeText={(text) => setBrand(text)}
-                        style = {styles.input}
+                        style={styles.input}
                         ref={(ref) => (inputRefs.current[4] = ref)}
                         onSubmitEditing={() => inputRefs.current[5].focus()}
                     />
@@ -262,15 +303,10 @@ const Nomenklatura = () => {
                         placeholder="Qiymət"
                         value={price}
                         onChangeText={(text) => setPrice(text)}
-                        style = {styles.input}
+                        style={styles.input}
                         ref={(ref) => (inputRefs.current[5] = ref)}
                         keyboardType="numeric"
                     />
-                    {/*<View style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <DropDown items={priceSelect} placeholder={'Qiymet'} />
-                        <DropDown items={nomenklatura} placeholder={'Nomenklatura'} />
-                        <DropDown items={priceSelect} placeholder={'Kontragent'} />
-                    </View>*/}
                 </ScrollView>
                 <View style={{ alignItems: 'flex-end', margin: 10 }}>
                     <Pressable style={{ ...styles.button, width: 150 }} onPress={sendData}>
@@ -278,44 +314,6 @@ const Nomenklatura = () => {
                     </Pressable>
                 </View>
             </Modal>
-
-            <View style={{ ...styles.row }}>
-                {headers.map((header, rowIndex) => (
-                    <View style={styles.cell} key={`row_${rowIndex}`}>
-                        <Text numberOfLines={1} ellipsizeMode="tail" textBreakStrategy="simple" style={{ fontWeight: 600 }}>{header}</Text>
-                    </View>
-                ))}
-            </View>
-
-            {resNomenklatura.map((row, rowIndex) => (
-                <TouchableOpacity key={`row_${rowIndex}`} onPress={() => handleRowPress(row)}
-                    style={[
-                        styles.row,
-                        selectedRows.some((selectedRow) => selectedRow.id === row.id) && { backgroundColor: 'lightblue' },
-                    ]}>
-                    <View style={styles.cell}>
-                        <Text>{++rowCount}</Text>
-                    </View>
-                    <View style={styles.cell}>
-                        <Text> {resNomenklatura[rowIndex]?.name}</Text>
-                    </View>
-                    <View style={styles.cell}>
-                        <Text>{resNomenklatura[rowIndex]?.kind}</Text>
-                    </View>
-                    <View style={styles.cell}>
-                        <Text>{resNomenklatura[rowIndex]?.price}</Text>
-                    </View>
-                    <View style={styles.cell}>
-                        <Text>{invoiceNumber[rowIndex]}</Text>
-                    </View>
-                </TouchableOpacity>
-            ))}
-            <View style={{ margin: 10 }}>
-                <Pressable disabled={selectedRows.length === 0} style={{ ...styles.button, width: 150, display: `${selectedRows.length === 0 ? 'none' : 'block'}`, backgroundColor: 'blue' }} onPress={handelModalOpen}>
-                    <Text style={styles.text}>Redaktə et</Text>
-                </Pressable>
-            </View>
-
             <Modal visible={isUpdateModalVisible} animationType="slide">
                 <ScrollView contentContainerStyle={{ marginVertical: 10 }} >
                     <View style={{ padding: 5 }}>
@@ -327,14 +325,14 @@ const Nomenklatura = () => {
                             <View style={{ ...styles.row, marginHorizontal: 10 }}>
                                 {editHeaders.map((header, rowIndex) => (
                                     <View style={styles.cell} key={`row_${rowIndex}`}>
-                                        <Text>{header}</Text>
+                                        <Text style={styles.cellText}>{header}</Text>
                                     </View>
                                 ))}
                             </View>
                             {selectedRows.map((row, rowIndex) => (
                                 <View style={{ ...styles.row, marginHorizontal: 10 }} key={`row_${rowIndex}`}>
                                     <View style={styles.cell}>
-                                        <Text>{++rowCount}</Text>
+                                        <Text style={styles.cellText}>{++rowCount}</Text>
                                     </View>
                                     <View style={styles.cell}>
                                         <TextInput
@@ -383,7 +381,7 @@ const Nomenklatura = () => {
                                         />
                                     </View>
                                     <View style={styles.cell}>
-                                        <Text>{String(invoiceNumber[rowIndex])}</Text>
+                                        <Text style={styles.cellText}>{String(invoiceNumber[rowIndex])}</Text>
                                     </View>
                                 </View>
                             ))}
@@ -403,30 +401,44 @@ const Nomenklatura = () => {
                     </View>
                 </ScrollView>
             </Modal>
-            <View style={styles.table}>
-                <View style={styles.row}>
-                    <View style={styles.cell}>
-                        <Text style={{ textAlign: 'center', fontSize: 20 }}>Qalıqlar</Text>
-                    </View>
+
+            <ScrollView contentContainerStyle={{ paddingVertical: 35, marginVertical: 20, marginHorizontal: 10 }}>
+                <View style={{ marginTop: 80 }}>
+                    {resNomenklatura.map((row, rowIndex) => (
+                        <TouchableOpacity key={`row_${rowIndex}`} onPress={() => handleRowPress(row)}
+                            style={[
+                                styles.row,
+                                selectedRows.some((selectedRow) => selectedRow.id === row.id) && { backgroundColor: 'lightblue' },
+
+                            ]}>
+                            <View style={styles.cell}>
+                                <Text style={{ ...styles.cellText, textAlign: 'center' }}>{++rowCount}</Text>
+                            </View>
+                            <View style={styles.cell}>
+                                <Text style={{ ...styles.cellText, }}> {resNomenklatura[rowIndex]?.name}</Text>
+                            </View>
+                            {/* <View style={styles.cell}>
+                        <Text style={{...styles.cellText,}}>{resNomenklatura[rowIndex]?.kind}</Text>
+                    </View> */}
+                            <View style={styles.cell}>
+                                <Text style={{ ...styles.cellText, textAlign: 'center' }}>{resNomenklatura[rowIndex]?.price}</Text>
+                            </View>
+                            <View style={styles.cell}>
+                                <Text style={{ ...styles.cellText, textAlign: 'center' }}>{invoiceNumber[rowIndex]}</Text>
+                            </View>
+                        </TouchableOpacity>
+                    ))}
                 </View>
-                <View style={styles.row}>
-                    <View style={styles.cell} >
-                        <Text style={{ textAlign: 'center' }}>Baş anbar</Text>
-                    </View>
-                    <View style={styles.cell} >
-                        <Text style={{ textAlign: 'center' }}>3</Text>
-                    </View>
+
+                <View style={{ margin: 10 }}>
+                    <Pressable disabled={selectedRows.length === 0} style={{ ...styles.button, width: 150, display: `${selectedRows.length === 0 ? 'none' : 'block'}`, backgroundColor: 'blue' }} onPress={handelModalOpen}>
+                        <Text style={styles.text}>Redaktə et</Text>
+                    </Pressable>
                 </View>
-                <View style={styles.row}>
-                    <View style={styles.cell}>
-                        <Text style={{ textAlign: 'center' }}>Anbar</Text>
-                    </View>
-                    <View style={styles.cell}>
-                        <Text style={{ textAlign: 'center' }}>5</Text>
-                    </View>
-                </View>
-            </View>
-        </ScrollView>
+
+
+            </ScrollView>
+        </View>
     )
 }
 
@@ -440,12 +452,14 @@ const styles = StyleSheet.create({
     row: {
         flexDirection: 'row',
         borderBottomWidth: 1,
+        borderTopWidth: 1,
         borderColor: '#ddd',
     },
     cell: {
         flex: 1,
         padding: 5,
         borderRightWidth: 1,
+        borderLeftWidth: 1,
         borderColor: '#ddd',
     },
     button: {
@@ -458,18 +472,30 @@ const styles = StyleSheet.create({
     },
     text: {
         fontSize: 16,
-        lineHeight: 21,
-        fontWeight: 'bold',
-        letterSpacing: 0.25,
         color: 'white',
-        fontFamily: 'Medium'
+        fontFamily: 'Regular'
     },
     input: {
         borderBottomWidth: 0.5,
         height: 48,
         borderBottomColor: '#8e93a1',
         marginBottom: 30,
-    }
+        fontFamily: 'Regular',
+    },
+    cellText: { fontFamily: 'Regular' },
+    header: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        height: 140,
+        backgroundColor: '#eee',
+        alignItems: 'center',
+        marginBottom: 40,
+        paddingVertical: 30,
+        paddingHorizontal: 10,
+        zIndex: 1,
+    },
 });
 
 export default Nomenklatura;

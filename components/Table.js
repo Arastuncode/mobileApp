@@ -3,7 +3,7 @@ import { View, StyleSheet, TextInput, Text } from "react-native";
 import { useFonts } from "expo-font";
 
 const Table = ({ headers, data }) => {
-    let [fontsLoad] = useFonts({ 'Medium': require('../assets/fonts/static/Montserrat-Medium.ttf') });
+    let [fontsLoad] = useFonts({ 'Medium': require('../assets/fonts/static/Roboto-Regular.ttf') });
     const [rows, setRows] = useState([]);
     const [inputData, setData] = useState([]);
 
@@ -14,61 +14,46 @@ const Table = ({ headers, data }) => {
         const key = `${header}`;
         setData((prevData) => ({
             ...prevData,
-            [key]: value,  
+            [key]: value,
         }));
     }
 
     let count = 1;
     return (
-        <View>
-            {/* <View style={{ flex: 1, justifyContent: 'end', marginVertical: 20, marginHorizontal: 10 }}>
-                <View >
-                    <Pressable style={{ ...styles.button, width: 50 }} onPress={addRow}>
-                        <Text style={styles.text}>+</Text>
-                    </Pressable>
-                </View>
-            </View> */}
-            <View style={styles.table}>
-                <View style={styles.row}>
-                    {headers.map((header, index) => (
-                        <View style={styles.cell} key={index}>
-                            <Text style={{...styles.cellText, fontWeight: 600}}>{header}</Text>
-                        </View>
-                    ))}
-                </View>
-                {data.map((row, rowIndex) => (
-                    <View key={rowIndex} style={styles.row}>
-                        {row.map((cell, cellIndex) => (
-                            <View style={styles.cell} key={cellIndex}>
-                                <Text style={styles.cellText} numberOfLines={2} ellipsizeMode="tail" textBreakStrategy="simple">
-                                    {cellIndex === 0 ? count++ : cell}
-                                </Text>
-                            </View>
-                        ))}
-                    </View>
-                ))}
-                {rows.map((row, rowIndex) => (
-                    <View style={styles.row} key={`row_${rowIndex}`}>
-                        {row.map((cell, cellIndex) => (
-                            <View style={styles.cell} key={`row_${cellIndex}`}>
-                                <TextInput
-                                    placeholder={String(headers[cellIndex])}
-                                    onChangeText={(text) => handleInputChange(rowIndex, headers[cellIndex], text)}
-                                    value={inputData[`${rowIndex}_${headers[cellIndex]}`]}
-                                    style={{ textAlign: 'center' }}
-                                    keyboardType={String(headers[cellIndex]) == "Məbləğ" | "Miqdar" ? 'numeric' : ''}
-                                />
-                            </View>
-                        ))}
+        <View style={styles.table}>
+            <View style={styles.row}>
+                {headers.map((header, index) => (
+                    <View style={styles.cell} key={index}>
+                        <Text style={{ ...styles.cellText, fontWeight: 600, fontSize: 18 }}>{header}</Text>
                     </View>
                 ))}
             </View>
-            {/* <View style={{ alignItems: 'flex-end', margin: 10 }}>
-                <Pressable style={{ ...styles.button, width: 150 }} onPress={handleInputChange}>
-                    <Text style={styles.text}>Təsdiq et</Text>
-                </Pressable>
-            </View> */}
-            {/* <Text> {JSON.stringify({ inputData }, null, 4)} </Text> */}
+            {data.map((row, rowIndex) => (
+                <View key={rowIndex} style={styles.row}>
+                    {row.map((cell, cellIndex) => (
+                        <View style={styles.cell} key={cellIndex}>
+                            <Text style={{ ...styles.cellText, fontSize: 14 }} numberOfLines={2} ellipsizeMode="tail" textBreakStrategy="simple">
+                                {cellIndex === 0 ? count++ : cell}
+                            </Text>
+                        </View>
+                    ))}
+                </View>
+            ))}
+            {rows.map((row, rowIndex) => (
+                <View style={styles.row} key={`row_${rowIndex}`}>
+                    {row.map((cell, cellIndex) => (
+                        <View style={styles.cell} key={`row_${cellIndex}`}>
+                            <TextInput
+                                placeholder={String(headers[cellIndex])}
+                                onChangeText={(text) => handleInputChange(rowIndex, headers[cellIndex], text)}
+                                value={inputData[`${rowIndex}_${headers[cellIndex]}`]}
+                                style={{ ...styles.cellText, textAlign: 'center' }}
+                                keyboardType={String(headers[cellIndex]) == "Məbləğ" | "Miqdar" ? 'numeric' : ''}
+                            />
+                        </View>
+                    ))}
+                </View>
+            ))}
         </View>
     );
 }
@@ -95,6 +80,7 @@ const styles = StyleSheet.create({
     },
     cellText: {
         textAlign: 'center',
+        fontFamily: 'Medium'
     },
     button: {
         alignItems: 'center',
@@ -106,10 +92,7 @@ const styles = StyleSheet.create({
     },
     text: {
         fontSize: 16,
-        lineHeight: 21,
-        fontWeight: 'bold',
-        letterSpacing: 0.25,
         color: 'white',
-        fontFamily: 'Medium'
+        fontFamily: 'Medium',
     },
 });

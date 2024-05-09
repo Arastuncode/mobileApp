@@ -8,9 +8,13 @@ import { sendRequest } from '../services/Server';
 
 const Stack = createNativeStackNavigator();
 
-const Routes = ({ navigation }) => {
+const Routes = () => {
+
     const [resData, setData] = useState([]);
-    let [fontsLoad] = useFonts({'Medium': require('../assets/fonts/static/Montserrat-Medium.ttf') });
+    let [fontsLoad] = useFonts({
+        'Regular': require('../assets/fonts/static/Roboto-Regular.ttf'),
+        'Bold': require('../assets/fonts/static/Roboto-Bold.ttf')
+    });
     
     useEffect(() => {
         const fetchDataAsync = async () => {
@@ -51,7 +55,7 @@ const Routes = ({ navigation }) => {
 
     return (
         <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'start', marginTop: 20 }}>
-            <Text style={{ textAlign: 'center', fontFamily: 'Medium', fontSize: 32}}> Marşurutlar </Text>
+            <Text style={{ textAlign: 'center', fontFamily: 'Regular', fontSize: 32}}> Marşurutlar </Text>
             <Table  data={extractedData}  headers={headers}/>
         </ScrollView>
     )
